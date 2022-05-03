@@ -67,9 +67,9 @@
         </Border>
         <Label Grid.Row="2" VerticalAlignment="Top">Объём каждого</Label>
         <Border  Grid.Row="3" BorderBrush="Black" BorderThickness="2" VerticalAlignment="Top" MinWidth="100" MaxWidth="400" MaxHeight="50" MinHeight="50">
-            <TextBox x:Name="size"   Grid.Row="2"/>
+            <TextBox x:Name="size"   Grid.Row="3"/>
         </Border>
-        <Button Grid.Row="4" x:Name="save"  >Сохранить</Button>
+        <Button Grid.Row="4" x:Name="save" Click="btnSaveSettings" >Сохранить</Button>
 
     </Grid>
 </Window>
