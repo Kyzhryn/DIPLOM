@@ -15,7 +15,6 @@ namespace DIPLOM
         private List<int> sizeDataInTasks; //size of data in i request
         private List<List<int>> tasksOnDevices;//time of i request processing on the j device
 
-
         public MainWindow()
         {
             InitializeComponent();
