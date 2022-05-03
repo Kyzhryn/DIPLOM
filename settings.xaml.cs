@@ -1,16 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace DIPLOM
 {
@@ -23,5 +12,37 @@ namespace DIPLOM
         {
             InitializeComponent();
         }
+
+        public void btnSaveSettings(object sender, RoutedEventArgs e)
+        {
+            string allSettings = count.Text + " " + size.Text;
+            int countStorage;
+            int sizeStorage;
+
+            if (!int.TryParse(count.Text, out countStorage))
+            {
+                MessageBox.Show("Вы ввели не число в поле количество");
+                return;
+            }
+                
+            if (!int.TryParse(size.Text, out sizeStorage))
+            {
+                MessageBox.Show("Вы ввели не число в поле размера хранилища");
+                return;
+            }
+
+            //set values to the global space
+            App.Current.Properties["countStorage"] = countStorage;
+            App.Current.Properties["sizeStorage"] = sizeStorage;
+
+            //write in file
+            StreamWriter writerSettings = new StreamWriter("settings.txt");
+            writerSettings.WriteLine(allSettings);
+            writerSettings.Close();
+            //and close window
+            this.Close();
+
+        }
+
     }
 }

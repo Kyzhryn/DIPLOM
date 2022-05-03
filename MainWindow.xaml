@@ -43,10 +43,10 @@
             </Grid.Resources>
 
 
-        <Button x:Name="Start"    Grid.Row="0"                                    >Старт</Button>
-        <Button x:Name="Load"     Grid.Row="1" Click="btnOpenFile_Click"          >Загрузка данных</Button>
-        <Button x:Name="Settings" Grid.Row="2" Click="btnOpenSettingsWindow"      >Настройки</Button>
-        <Button x:Name="Exit"     Grid.Row="3" Margin="30"                        >Выход</Button>
+        <Button x:Name="Start"    Grid.Row="0" Click="btnStartCalculating"                >Старт</Button>
+        <Button x:Name="Load"     Grid.Row="1" Click="btnOpenFile_Click"                  >Загрузка данных</Button>
+        <Button x:Name="Settings" Grid.Row="2" Click="btnOpenSettingsWindow"              >Настройки</Button>
+        <Button x:Name="Exit"     Grid.Row="3" Margin="30" Click="btnCloseProgram"        >Выход</Button>
          
 
     </Grid>

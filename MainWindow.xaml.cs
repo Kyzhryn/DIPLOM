@@ -15,11 +15,54 @@ namespace DIPLOM
         private List<int> sizeDataInTasks; //size of data in i request
         private List<List<int>> tasksOnDevices;//time of i request processing on the j device
 
+        public static string defaultSettings = "5 500";
+        public static string fileNameWithSettings = "settings.txt";
         public MainWindow()
         {
-            InitializeComponent();
+            int[] massiveWithSettings;
+            string readedSettings = "";
+            //check exists file
+            if (!File.Exists(fileNameWithSettings)) //if not exist
+            {
+                //write and create file
+                StreamWriter writerSettings = new StreamWriter(fileNameWithSettings);
+                writerSettings.WriteLine(defaultSettings);
+                writerSettings.Close();
+
+                //split defaultSettings string and get countStorage and sizeStorage
+                massiveWithSettings = defaultSettings.Split(' ')
+                                                         .Select(x => int.Parse(x)).ToArray();
+            }
+            else
+            {
+                //open file
+                StreamReader fileReadSettings = new StreamReader(fileNameWithSettings);
+                if (fileReadSettings == null) //if can't open file
+                {
+                    MessageBox.Show("Не удалось открыть файл!");
+                    return;
+                }
+
+                readedSettings = fileReadSettings.ReadLine();
+                if (readedSettings == null) //if file empty
+                {
+                    MessageBox.Show("Файл пуст");
+                    return;
+                }
+                //split readedSettings string and get countStorage and sizeStorage
+                massiveWithSettings = readedSettings.Split(' ')
+                                                            .Select(x => int.Parse(x)).ToArray();
+                fileReadSettings.Close();
+            }
+           
+            App.Current.Properties["countStorage"] = massiveWithSettings[0];
+            App.Current.Properties["sizeStorage"] = massiveWithSettings[1];
+
             tasksOnDevices = new List<List<int>>();
             sizeDataInTasks = new List<int>();
+
+            InitializeComponent();
+            
         }
 
         public void btnOpenFile_Click(object sender, RoutedEventArgs e)
@@ -47,7 +90,7 @@ namespace DIPLOM
                 while(fileWithData.EndOfStream != true)
                 {
                     allReaded = fileWithData.ReadLine();
-                    //MessageBox.Show(allReaded);
+                  
                     int[] line = allReaded.Split(' ')
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
                                 .Select(x => int.Parse(x)).ToArray(); //transformation string to the int[]
@@ -74,10 +117,23 @@ namespace DIPLOM
         }
 
 
+        public void btnStartCalculating(object sender, RoutedEventArgs e)
+        {
+            int countStorage = (int)App.Current.Properties["countStorage"];
+
+            
+        }
+
         public void btnOpenSettingsWindow(object sender, RoutedEventArgs e)
         {
             settings settingsWindow = new settings();
+            settingsWindow.Owner = this;
             settingsWindow.Show();
+        }
+
+        public void btnCloseProgram(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
 
 
