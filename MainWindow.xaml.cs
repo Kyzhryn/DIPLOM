@@ -14,6 +14,7 @@ namespace DIPLOM
 
         private List<int> sizeDataInTasks; //size of data in i request
         private List<List<int>> tasksOnDevices;//time of i request processing on the j device
+        public Dictionary<int, int[]> sheduleOfProcessing;
 
         public static string defaultSettings = "5 500";
         public static string fileNameWithSettings = "settings.txt";
@@ -30,8 +31,13 @@ namespace DIPLOM
                 writerSettings.Close();
 
                 //split defaultSettings string and get countStorage and sizeStorage
-                massiveWithSettings = defaultSettings.Split(' ')
-                                                         .Select(x => int.Parse(x)).ToArray();
+                massiveWithSettings = defaultSettings
+                                      .Split(' ')
+                                      .Select
+                                      (
+                                        x => int.Parse(x)
+                                      )
+                                      .ToArray();
             }
             else
             {
@@ -60,6 +66,7 @@ namespace DIPLOM
 
             tasksOnDevices = new List<List<int>>();
             sizeDataInTasks = new List<int>();
+            sheduleOfProcessing = new Dictionary<int, int[]>();
 
             InitializeComponent();
             
@@ -119,7 +126,36 @@ namespace DIPLOM
 
         public void btnStartCalculating(object sender, RoutedEventArgs e)
         {
-            int countStorage = (int)App.Current.Properties["countStorage"];
+            //int countStorage = (int)App.Current.Properties["countStorage"];
+
+            if(tasksOnDevices.Count == 0)
+            {
+                MessageBox.Show("Данные для расчетов не были загружены");
+                return;
+            }
+
+            //id of the best device
+            int bestDevice;
+            //time of the best device
+            int minTime;
+
+            //<id_zaprosa, id_device>
+            Dictionary<int, int> fastestDevices = new Dictionary<int, int>();
+             я забыл про директивный срок выполнения запроса, нужно добавить их в файл и добавить при считывании
+
+            for (var task = 0; task < tasksOnDevices.Count; task++)
+            {
+               
+                bestDevice = 0;
+                
+                minTime = tasksOnDevices[task][bestDevice];
+                for(int device = 1; device <tasksOnDevices[task].Count; device++)
+                {
+                   if(tasksOnDevices[task][device] < tasksOnDevices[task][bestDevice]) bestDevice = device;
+                }
+
+
+            }
 
             
         }
