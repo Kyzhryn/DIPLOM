@@ -13,6 +13,7 @@ namespace DIPLOM
     {
 
         private List<int> sizeDataInTasks; //size of data in i request
+        private List<int> deadlinesOfTasks; //deadlines of each 
         private List<List<int>> tasksOnDevices;//time of i request processing on the j device
         public Dictionary<int, int[]> sheduleOfProcessing;
 
@@ -64,10 +65,10 @@ namespace DIPLOM
             App.Current.Properties["countStorage"] = massiveWithSettings[0];
             App.Current.Properties["sizeStorage"] = massiveWithSettings[1];
 
-            tasksOnDevices = new List<List<int>>();
-            sizeDataInTasks = new List<int>();
-            sheduleOfProcessing = new Dictionary<int, int[]>();
-
+            tasksOnDevices       = new List<List<int>>();
+            sizeDataInTasks      = new List<int>();
+            sheduleOfProcessing  = new Dictionary<int, int[]>();
+            deadlinesOfTasks     = new List<int>();
             InitializeComponent();
             
         }
@@ -92,9 +93,11 @@ namespace DIPLOM
                     MessageBox.Show("Не удалось открыть файл");
                     return; 
                 }
-                    
+
                 //read data from file
-                while(fileWithData.EndOfStream != true)
+                //one line in file it's 
+                // int[] №i task, size data in task, deadline
+                while (fileWithData.EndOfStream != true)
                 {
                     allReaded = fileWithData.ReadLine();
                   
@@ -108,11 +111,12 @@ namespace DIPLOM
                         return;
                     }
 
-                    int[] oneTaskOnDevices = new int[line.Length - 1]; //array with line about 1 task
-                    Array.Copy(line, oneTaskOnDevices, line.Length - 1); //copy necessary information
+                    int[] oneTaskOnDevices = new int[line.Length - 2]; //array with line about 1 task
+                    Array.Copy(line, oneTaskOnDevices, line.Length - 2); //copy necessary information
 
                     tasksOnDevices.Add(new List<int>(oneTaskOnDevices)); // add line about 1 task to the massive
-                    sizeDataInTasks.Add(line[line.Length - 1]); //add size of data 1 task
+                    sizeDataInTasks.Add(line[line.Length - 2]); //add size of data 1 task
+                    deadlinesOfTasks.Add(line[line.Length - 1]); 
                 }
                 
 
@@ -122,7 +126,6 @@ namespace DIPLOM
 
 
         }
-
 
         public void btnStartCalculating(object sender, RoutedEventArgs e)
         {
@@ -136,27 +139,57 @@ namespace DIPLOM
 
             //id of the best device
             int bestDevice;
-            //time of the best device
-            int minTime;
+           
 
             //<id_zaprosa, id_device>
             Dictionary<int, int> fastestDevices = new Dictionary<int, int>();
-             я забыл про директивный срок выполнения запроса, нужно добавить их в файл и добавить при считывании
+            int[] timeOfDeviceRelease = new int[tasksOnDevices[0].Count];
+            var tempTasksOnDevices = new List<List<int>>(tasksOnDevices);
+            int fastestTask;
+            int timeOfFastestTask;
 
-            for (var task = 0; task < tasksOnDevices.Count; task++)
+            while (tempTasksOnDevices.Count !=0)
             {
-               
-                bestDevice = 0;
-                
-                minTime = tasksOnDevices[task][bestDevice];
-                for(int device = 1; device <tasksOnDevices[task].Count; device++)
+                fastestDevices.Clear();
+                //для каждого задания находится прибор, который быстрее всего их отработает
+                //for each task find device that can do it task the fastest
+                foreach (var task in tempTasksOnDevices)
                 {
-                   if(tasksOnDevices[task][device] < tasksOnDevices[task][bestDevice]) bestDevice = device;
+                    //id of the best device to this task
+                    bestDevice = 0;
+                    //у одного задания происходит пересмотр всех приборов и выбор самого эффективного для выполнения
+                    //look at all devices, calculate time of ending of the real device and search the fastest device
+                    for (var device = 0; device < fastestDevices.Count; device++)
+                    {
+                        if (timeOfDeviceRelease[device] + task[device] < timeOfDeviceRelease[bestDevice] + task[bestDevice])
+                        {
+                            bestDevice = device;
+                        }
+                    }
+
+                    //add to the massive: id_task => bestDevice
+                    fastestDevices.Add(tasksOnDevices.IndexOf(task), bestDevice);
                 }
 
+                //timeOfFastestTask  = timeOfDeviceRelease[ tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())] + tasksOnDevices[tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())][tempTasksOnDevices.First()[fastestDevices[tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())]]];
+                fastestTask = 0;
+                timeOfFastestTask = int.MaxValue;
+                foreach (var task in fastestDevices)
+                {
+                   if(timeOfDeviceRelease[task.Value] + tasksOnDevices[task.Key][task.Value] <timeOfFastestTask)
+                   {
+                        fastestTask = task.Key;
+                        timeOfFastestTask = timeOfDeviceRelease[fastestDevices[fastestTask]] + tasksOnDevices[task.Key][task.Value];
+                    }
+                }
+                //в расписание записывается прибор и время завершения по ключу - номер запроса
+                sheduleOfProcessing.Add(fastestTask, new int[] { fastestDevices[fastestTask], timeOfFastestTask });
+                timeOfDeviceRelease[fastestDevices[fastestTask]] += timeOfFastestTask;
+                tempTasksOnDevices.Remove(tasksOnDevices[fastestTask]);
 
+                int i = 0;
+                
             }
-
             
         }
 
