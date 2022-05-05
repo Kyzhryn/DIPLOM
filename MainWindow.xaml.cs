@@ -148,13 +148,16 @@ namespace DIPLOM
             int fastestTask;
             int timeOfFastestTask;
 
-            while (tempTasksOnDevices.Count !=0)
+            //while (tempTasksOnDevices.Count !=0)
+            while(sheduleOfProcessing.Count != tasksOnDevices.Count)
             {
                 fastestDevices.Clear();
                 //для каждого задания находится прибор, который быстрее всего их отработает
                 //for each task find device that can do it task the fastest
                 foreach (var task in tempTasksOnDevices)
                 {
+                    //if task exists in shedule
+                    if (sheduleOfProcessing.ContainsKey(tempTasksOnDevices.IndexOf(task))) continue;
                     //id of the best device to this task
                     bestDevice = 0;
                     //у одного задания происходит пересмотр всех приборов и выбор самого эффективного для выполнения
@@ -171,7 +174,6 @@ namespace DIPLOM
                     fastestDevices.Add(tasksOnDevices.IndexOf(task), bestDevice);
                 }
 
-                //timeOfFastestTask  = timeOfDeviceRelease[ tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())] + tasksOnDevices[tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())][tempTasksOnDevices.First()[fastestDevices[tempTasksOnDevices.IndexOf(tempTasksOnDevices.First())]]];
                 fastestTask = 0;
                 timeOfFastestTask = int.MaxValue;
                 foreach (var task in fastestDevices)
@@ -185,11 +187,10 @@ namespace DIPLOM
                 //в расписание записывается прибор и время завершения по ключу - номер запроса
                 sheduleOfProcessing.Add(fastestTask, new int[] { fastestDevices[fastestTask], timeOfFastestTask });
                 timeOfDeviceRelease[fastestDevices[fastestTask]] += timeOfFastestTask;
-                tempTasksOnDevices.Remove(tasksOnDevices[fastestTask]);
-
-                int i = 0;
-                
+               
             }
+
+            //сделать расписание загрузки ресурсов, зависимое от расписания обработки
             
         }
 
