@@ -11,13 +11,41 @@ namespace DIPLOM
 
     public partial class MainWindow : Window
     {
+        //size of data in i request
+        private List<int> sizeDataInTasks;
 
-        private List<int> sizeDataInTasks; //size of data in i request
-        private List<int> deadlinesOfTasks; //deadlines of each 
-        private List<List<int>> tasksOnDevices;//time of i request processing on the j device
+
+        //deadlines of each 
+        private List<int> deadlinesOfTasks; 
+
+
+        //time of i request processing on the j device
+        private List<List<int>> tasksOnDevices;
+
+
+        //расписание загрузки на приборы: ключ - номер запроса,
+        //в массиве
+        //[
+        //номер прибора,
+        //порядковый номер на приборе,
+        //время начала обработки,
+        //время окончания обработки
+        //]
         public Dictionary<int, int[]> sheduleOfProcessing;
 
+        //расписание загрузки данных для запросов в хранилища
+        //ключ - номер запроса, в масссиве 
+        //[
+        //номер хранилища,
+        //номер в загрузке на данном хранилище
+        //момент начала загрузки
+        //]
+        public Dictionary<int, int[]> sheduleOfLoading;
+
+        //настройки по умолчанию для храрнилищ
         public static string defaultSettings = "5 500";
+
+        //имя файла для хранения настроек
         public static string fileNameWithSettings = "settings.txt";
         public MainWindow()
         {
@@ -68,6 +96,7 @@ namespace DIPLOM
             tasksOnDevices       = new List<List<int>>();
             sizeDataInTasks      = new List<int>();
             sheduleOfProcessing  = new Dictionary<int, int[]>();
+            sheduleOfLoading     = new Dictionary<int, int[]>();
             deadlinesOfTasks     = new List<int>();
             InitializeComponent();
             
@@ -129,8 +158,6 @@ namespace DIPLOM
 
         public void btnStartCalculating(object sender, RoutedEventArgs e)
         {
-            //int countStorage = (int)App.Current.Properties["countStorage"];
-
             if(tasksOnDevices.Count == 0)
             {
                 MessageBox.Show("Данные для расчетов не были загружены");
@@ -139,17 +166,21 @@ namespace DIPLOM
 
             //id of the best device
             int bestDevice;
-           
-
             //<id_zaprosa, id_device>
             Dictionary<int, int> fastestDevices = new Dictionary<int, int>();
+            //время, когда каждый прибор освободится
             int[] timeOfDeviceRelease = new int[tasksOnDevices[0].Count];
+            //временный массив из которого будут исключаться задания
             var tempTasksOnDevices = new List<List<int>>(tasksOnDevices);
+            //самое быстровыполняемое задание
             int fastestTask;
+            //время выполнения самого быстровыполняемого задания
             int timeOfFastestTask;
+            //счётчик для подсчета номеров запросов на приборах
+            int[] numbersTasksOnDevices = Array.ConvertAll(new int[tasksOnDevices[0].Count], x => x + 1);
 
             //while (tempTasksOnDevices.Count !=0)
-            while(sheduleOfProcessing.Count != tasksOnDevices.Count)
+            while (sheduleOfProcessing.Count != tasksOnDevices.Count)
             {
                 fastestDevices.Clear();
                 //для каждого задания находится прибор, который быстрее всего их отработает
@@ -162,7 +193,7 @@ namespace DIPLOM
                     bestDevice = 0;
                     //у одного задания происходит пересмотр всех приборов и выбор самого эффективного для выполнения
                     //look at all devices, calculate time of ending of the real device and search the fastest device
-                    for (var device = 0; device < fastestDevices.Count; device++)
+                    for (var device = 0; device < tasksOnDevices[0].Count; device++)
                     {
                         if (timeOfDeviceRelease[device] + task[device] < timeOfDeviceRelease[bestDevice] + task[bestDevice])
                         {
@@ -185,13 +216,47 @@ namespace DIPLOM
                     }
                 }
                 //в расписание записывается прибор и время завершения по ключу - номер запроса
-                sheduleOfProcessing.Add(fastestTask, new int[] { fastestDevices[fastestTask], timeOfFastestTask });
+                sheduleOfProcessing.Add(
+                    fastestTask, 
+                    new int[] 
+                    { 
+                        fastestDevices[fastestTask], 
+                        numbersTasksOnDevices[fastestDevices[fastestTask]]++,
+                        timeOfFastestTask - tasksOnDevices[fastestTask][fastestDevices[fastestTask]],
+                        timeOfFastestTask 
+                    });
                 timeOfDeviceRelease[fastestDevices[fastestTask]] += timeOfFastestTask;
                
             }
 
-            //сделать расписание загрузки ресурсов, зависимое от расписания обработки
-            
+           
+            //создание расписания загрузки в хранилища
+
+            //1. найти все запросы, которые первые на приборах 
+            //2. добавить их в расписание на различные устройства первыми соотвественно
+            //(иначе ограничение мат модели выполняться не будет)
+            //3. расставить все запросы по эвристическому правилу, которые вмещаются
+            //4. освобождать память в тот момент времени, когда запрос выполнится
+            //5. шагать по расписанию, искать первый освободившийся запрос и уменьшать занятость хранилища 
+            //6. после очищения запроса пытаться загрузить данные для нового запроса
+            //7. повторять данное пока данные для всех запросов не будет размещены
+
+            //расставляем запросы, первые в обработке
+            foreach(var task in sheduleOfProcessing)
+            {
+                //если запрос является первым, то его данные грузятся в хранилище с номером прибора ( для упрощения кода)
+                if(task.Value[1] == 1)
+                {
+                    sheduleOfLoading.Add(
+                        task.Key, 
+                        new int[] 
+                        {
+                            task.Value[0],
+                            1,
+                            0
+                        });
+                }
+            }
         }
 
         public void btnOpenSettingsWindow(object sender, RoutedEventArgs e)
