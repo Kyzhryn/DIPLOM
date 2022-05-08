@@ -11,41 +11,52 @@ namespace DIPLOM
 
     public partial class MainWindow : Window
     {
-        //size of data in i request
+
+        /// <summary>
+        /// size of data in i request
+        /// </summary>
         private List<int> sizeDataInTasks;
 
+        /// <summary>
+        /// deadlines of each 
+        /// </summary>
+        private List<int> deadlinesOfTasks;
 
-        //deadlines of each 
-        private List<int> deadlinesOfTasks; 
-
-
-        //time of i request processing on the j device
+        /// <summary>
+        /// time of i request processing on the j device
+        /// </summary>
         private List<List<int>> tasksOnDevices;
 
-
-        //расписание загрузки на приборы: ключ - номер запроса,
-        //в массиве
-        //[
-        //номер прибора,
-        //порядковый номер на приборе,
-        //время начала обработки,
-        //время окончания обработки
-        //]
+        /// <summary>
+        /// расписание загрузки на приборы: ключ - номер запроса,
+        ///в массиве
+        ///[
+        ///номер прибора,
+        ///порядковый номер на приборе,
+        ///время начала обработки,
+        ///время окончания обработки
+        /// </summary>
         public Dictionary<int, int[]> sheduleOfProcessing;
 
-        //расписание загрузки данных для запросов в хранилища
-        //ключ - номер запроса, в масссиве 
-        //[
-        //номер хранилища,
-        //номер в загрузке на данном хранилище
-        //момент начала загрузки
-        //]
+        /// <summary>
+        /// расписание загрузки данных для запросов в хранилища
+        /// ключ - номер запроса, в масссиве
+        ///[
+        ///номер хранилища,
+        ///номер в загрузке на данном хранилище
+        ///момент начала загрузки
+        ///]
+        /// </summary>
         public Dictionary<int, int[]> sheduleOfLoading;
 
-        //настройки по умолчанию для храрнилищ
+        /// <summary>
+        /// настройки по умолчанию для хранилищ
+        /// </summary>
         public static string defaultSettings = "5 500";
 
-        //имя файла для хранения настроек
+        /// <summary>
+        /// имя файла для хранения настроек
+        /// </summary>
         public static string fileNameWithSettings = "settings.txt";
         public MainWindow()
         {
@@ -163,15 +174,13 @@ namespace DIPLOM
                 MessageBox.Show("Данные для расчетов не были загружены");
                 return;
             }
-
-            //id of the best device
+            
+            // id of the best device
             int bestDevice;
             //<id_zaprosa, id_device>
             Dictionary<int, int> fastestDevices = new Dictionary<int, int>();
             //время, когда каждый прибор освободится
             int[] timeOfDeviceRelease = new int[tasksOnDevices[0].Count];
-            //временный массив из которого будут исключаться задания
-            var tempTasksOnDevices = new List<List<int>>(tasksOnDevices);
             //самое быстровыполняемое задание
             int fastestTask;
             //время выполнения самого быстровыполняемого задания
@@ -185,10 +194,10 @@ namespace DIPLOM
                 fastestDevices.Clear();
                 //для каждого задания находится прибор, который быстрее всего их отработает
                 //for each task find device that can do it task the fastest
-                foreach (var task in tempTasksOnDevices)
+                foreach (var task in tasksOnDevices)
                 {
                     //if task exists in shedule
-                    if (sheduleOfProcessing.ContainsKey(tempTasksOnDevices.IndexOf(task))) continue;
+                    if (sheduleOfProcessing.ContainsKey(tasksOnDevices.IndexOf(task))) continue;
                     //id of the best device to this task
                     bestDevice = 0;
                     //у одного задания происходит пересмотр всех приборов и выбор самого эффективного для выполнения
@@ -213,7 +222,7 @@ namespace DIPLOM
                    {
                         fastestTask = task.Key;
                         timeOfFastestTask = timeOfDeviceRelease[fastestDevices[fastestTask]] + tasksOnDevices[task.Key][task.Value];
-                    }
+                   }
                 }
                 //в расписание записывается прибор и время завершения по ключу - номер запроса
                 sheduleOfProcessing.Add(
@@ -229,9 +238,29 @@ namespace DIPLOM
                
             }
 
-           
-            //создание расписания загрузки в хранилища
 
+
+
+            //создание расписания загрузки в хранилища
+            int countStorages = (int)App.Current.Properties["countStorage"];
+            //словарь для подсчёта заполнения хранилищ
+            Dictionary<int, int> containersToData = new Dictionary<int, int>();
+            //заполняем его записями: номер хранилища => объём занятых данных
+            //вначале все хранилища пусты
+            for(var i =0; i<countStorages; i++ )
+            {
+                containersToData.Add(i,0);
+            }
+           // изменить тип containersToData на словарь, заполнить его от 0 до (int)App.Current.Properties["countStorage"]] - 1 нулями 
+           // пример перебора отсортированного
+           // foreach (var pair in dict.OrderBy(pair => pair.Value))
+           // {
+           //   Console.WriteLine("{0} - {1}", pair.Key, pair.Value);
+           // }
+
+
+            int speed              = (int)App.Current.Properties["speed"];
+            int maxSize            = (int)App.Current.Properties["sizeStorage"];
             //1. найти все запросы, которые первые на приборах 
             //2. добавить их в расписание на различные устройства первыми соотвественно
             //(иначе ограничение мат модели выполняться не будет)
@@ -242,20 +271,63 @@ namespace DIPLOM
             //7. повторять данное пока данные для всех запросов не будет размещены
 
             //расставляем запросы, первые в обработке
-            foreach(var task in sheduleOfProcessing)
+            foreach (var task in sheduleOfProcessing)
             {
                 //если запрос является первым, то его данные грузятся в хранилище с номером прибора ( для упрощения кода)
                 if(task.Value[1] == 1)
                 {
+                    //для тех запросов, которые обрабатываются первыми на устройствах
+                    //данные грузятся на различные хранилища первыми
                     sheduleOfLoading.Add(
                         task.Key, 
                         new int[] 
                         {
-                            task.Value[0],
-                            1,
-                            0
+                            task.Value[0],                   //номер хранилища
+                            1,                               //порядковый номер загрузки в хранилище
+                            0,                               //
+                            sizeDataInTasks[task.Key] * speed//
                         });
+                    //заполняем контейнеры данными
+                    containersToData[task.Value[0]] += sizeDataInTasks[task.Key];
                 }
+            }
+
+            //флаг для определения нашелся ли запрос,
+            //данные которого сейчас помещаются в какое-либо хранилище
+            var taskFinding = false;
+            var taskWithMinData = int.MaxValue;
+            //теперь заполняем хранилища данными для запросов доверху
+            while(true) //цикл будет работать
+            {
+                taskFinding = false;
+                taskWithMinData = int.MaxValue;
+
+                //обход всех запросов и поиск наименьшего подходящего
+                for (var data = 0; data < sizeDataInTasks.Count; data++ )
+                {
+                    //если данные запроса уже размещены в расписании, его нужно пропустить
+                    if(sheduleOfLoading.ContainsKey(data))
+                    {
+                        continue;
+                    }
+
+                    //если запрос требует ресурсов меньше,
+                    //чем текущий наименьший, то теперь он наименьший
+                    if(sizeDataInTasks[data] < sizeDataInTasks[taskWithMinData])
+                    {
+                        taskWithMinData = data;
+                    }
+                }
+
+                if(!taskFinding)
+                {
+                    break;
+                }
+
+                //требуется найти контейнер для данного запроса
+
+                //отсортировать список контейнеров и найти наименее занятый
+
             }
         }
 

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DIPLOM"
         mc:Ignorable="d"
-        Title="НАСТРОЙКИ" Height="450" Width="500" Background="#E7D7C7">
+        Title="НАСТРОЙКИ" Height="500" Width="400" Background="#E7D7C7">
     <Grid>
 
         <Grid.Resources>
@@ -58,6 +58,8 @@
             <RowDefinition Height="2*"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="2*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="2*"></RowDefinition>
             <RowDefinition Height="2*"></RowDefinition>
         </Grid.RowDefinitions>
 
@@ -69,7 +71,11 @@
         <Border  Grid.Row="3" BorderBrush="Black" BorderThickness="2" VerticalAlignment="Top" MinWidth="100" MaxWidth="400" MaxHeight="50" MinHeight="50">
             <TextBox x:Name="size" FontSize="24"  Grid.Row="3"/>
         </Border>
-        <Button Grid.Row="4" x:Name="save" Click="btnSaveSettings" >Сохранить</Button>
+        <Label Grid.Row="4"  MinWidth="50">Скорость загрузки</Label>
+        <Border  Grid.Row="5" BorderBrush="Black" BorderThickness="2" VerticalAlignment="Top" MinWidth="100" MaxWidth="400" MaxHeight="50" MinHeight="50">
+            <TextBox x:Name="speed" FontSize="24"  Grid.Row="3"/>
+        </Border>
+        <Button Grid.Row="6" x:Name="save" Click="btnSaveSettings" >Сохранить</Button>
 
     </Grid>
 </Window>

@@ -18,6 +18,7 @@ namespace DIPLOM
             string allSettings = count.Text + " " + size.Text;
             int countStorage;
             int sizeStorage;
+            int speedLoad;
 
             if (!int.TryParse(count.Text, out countStorage))
             {
@@ -31,10 +32,15 @@ namespace DIPLOM
                 return;
             }
 
+            if((!int.TryParse(speed.Text,out speedLoad)))
+            {
+                MessageBox.Show("Вы ввели не число в поле скорость загрузки");
+            }
+
             //set values to the global space
             App.Current.Properties["countStorage"] = countStorage;
-            App.Current.Properties["sizeStorage"] = sizeStorage;
-
+            App.Current.Properties["sizeStorage"] =  sizeStorage;
+            App.Current.Properties["speed"]       =  speedLoad;
             //write in file
             StreamWriter writerSettings = new StreamWriter("settings.txt");
             writerSettings.WriteLine(allSettings);
