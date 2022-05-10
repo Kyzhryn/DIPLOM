@@ -9,23 +9,31 @@ using Microsoft.Win32;
 namespace DIPLOM
 {
 
+    public static class DictionaryExtensions
+    {
+        public static TKey MaxIndex<TKey>(this IDictionary<TKey, int[]> dictionary)
+        {
+            return dictionary.FirstOrDefault(x => x.Value == dictionary.Values.Max()).Key;
+        }
+    }
+
     public partial class MainWindow : Window
     {
 
         /// <summary>
         /// size of data in i request
         /// </summary>
-        private List<int> sizeDataInTasks;
+        private List<int> _sizeDataInTasks;
 
         /// <summary>
         /// deadlines of each 
         /// </summary>
-        private List<int> deadlinesOfTasks;
+        private List<int> _deadlinesOfTasks;
 
         /// <summary>
         /// time of i request processing on the j device
         /// </summary>
-        private List<List<int>> tasksOnDevices;
+        private List<List<int>> _tasksOnDevices;
 
         /// <summary>
         /// расписание загрузки на приборы: ключ - номер запроса,
@@ -36,42 +44,42 @@ namespace DIPLOM
         ///время начала обработки,
         ///время окончания обработки
         /// </summary>
-        public Dictionary<int, int[]> sheduleOfProcessing;
+        public Dictionary<int, int[]> _sheduleOfProcessing;
 
         /// <summary>
         /// расписание загрузки данных для запросов в хранилища
         /// ключ - номер запроса, в масссиве
         ///[
         ///номер хранилища,
-        ///номер в загрузке на данном хранилище
+        ///номер в загрузке на данном хранилище,
         ///момент начала загрузки
         ///]
         /// </summary>
-        public Dictionary<int, int[]> sheduleOfLoading;
+        public Dictionary<int, int[]> _sheduleOfLoading;
 
         /// <summary>
         /// настройки по умолчанию для хранилищ
         /// </summary>
-        public static string defaultSettings = "5 500";
+        public static string _defaultSettings = "5 500";
 
         /// <summary>
         /// имя файла для хранения настроек
         /// </summary>
-        public static string fileNameWithSettings = "settings.txt";
+        public static string _fileNameWithSettings = "settings.txt";
         public MainWindow()
         {
             int[] massiveWithSettings;
             string readedSettings = "";
             //check exists file
-            if (!File.Exists(fileNameWithSettings)) //if not exist
+            if (!File.Exists(_fileNameWithSettings)) //if not exist
             {
                 //write and create file
-                StreamWriter writerSettings = new StreamWriter(fileNameWithSettings);
-                writerSettings.WriteLine(defaultSettings);
+                StreamWriter writerSettings = new StreamWriter(_fileNameWithSettings);
+                writerSettings.WriteLine(_defaultSettings);
                 writerSettings.Close();
 
                 //split defaultSettings string and get countStorage and sizeStorage
-                massiveWithSettings = defaultSettings
+                massiveWithSettings = _defaultSettings
                                       .Split(' ')
                                       .Select
                                       (
@@ -82,7 +90,7 @@ namespace DIPLOM
             else
             {
                 //open file
-                StreamReader fileReadSettings = new StreamReader(fileNameWithSettings);
+                StreamReader fileReadSettings = new StreamReader(_fileNameWithSettings);
                 if (fileReadSettings == null) //if can't open file
                 {
                     MessageBox.Show("Не удалось открыть файл!");
@@ -104,11 +112,11 @@ namespace DIPLOM
             App.Current.Properties["countStorage"] = massiveWithSettings[0];
             App.Current.Properties["sizeStorage"] = massiveWithSettings[1];
 
-            tasksOnDevices       = new List<List<int>>();
-            sizeDataInTasks      = new List<int>();
-            sheduleOfProcessing  = new Dictionary<int, int[]>();
-            sheduleOfLoading     = new Dictionary<int, int[]>();
-            deadlinesOfTasks     = new List<int>();
+            _tasksOnDevices       = new List<List<int>>();
+            _sizeDataInTasks      = new List<int>();
+            _sheduleOfProcessing  = new Dictionary<int, int[]>();
+            _sheduleOfLoading     = new Dictionary<int, int[]>();
+            _deadlinesOfTasks     = new List<int>();
             InitializeComponent();
             
         }
@@ -154,9 +162,9 @@ namespace DIPLOM
                     int[] oneTaskOnDevices = new int[line.Length - 2]; //array with line about 1 task
                     Array.Copy(line, oneTaskOnDevices, line.Length - 2); //copy necessary information
 
-                    tasksOnDevices.Add(new List<int>(oneTaskOnDevices)); // add line about 1 task to the massive
-                    sizeDataInTasks.Add(line[line.Length - 2]); //add size of data 1 task
-                    deadlinesOfTasks.Add(line[line.Length - 1]); 
+                    _tasksOnDevices.Add(new List<int>(oneTaskOnDevices)); // add line about 1 task to the massive
+                    _sizeDataInTasks.Add(line[line.Length - 2]); //add size of data 1 task
+                    _deadlinesOfTasks.Add(line[line.Length - 1]); 
                 }
                 
 
@@ -169,7 +177,7 @@ namespace DIPLOM
 
         public void btnStartCalculating(object sender, RoutedEventArgs e)
         {
-            if(tasksOnDevices.Count == 0)
+            if(_tasksOnDevices.Count == 0)
             {
                 MessageBox.Show("Данные для расчетов не были загружены");
                 return;
@@ -180,29 +188,29 @@ namespace DIPLOM
             //<id_zaprosa, id_device>
             Dictionary<int, int> fastestDevices = new Dictionary<int, int>();
             //время, когда каждый прибор освободится
-            int[] timeOfDeviceRelease = new int[tasksOnDevices[0].Count];
+            int[] timeOfDeviceRelease = new int[_tasksOnDevices[0].Count];
             //самое быстровыполняемое задание
             int fastestTask;
             //время выполнения самого быстровыполняемого задания
             int timeOfFastestTask;
             //счётчик для подсчета номеров запросов на приборах
-            int[] numbersTasksOnDevices = Array.ConvertAll(new int[tasksOnDevices[0].Count], x => x + 1);
+            int[] numbersTasksOnDevices = Array.ConvertAll(new int[_tasksOnDevices[0].Count], x => x + 1);
 
             //while (tempTasksOnDevices.Count !=0)
-            while (sheduleOfProcessing.Count != tasksOnDevices.Count)
+            while (_sheduleOfProcessing.Count != _tasksOnDevices.Count)
             {
                 fastestDevices.Clear();
                 //для каждого задания находится прибор, который быстрее всего их отработает
                 //for each task find device that can do it task the fastest
-                foreach (var task in tasksOnDevices)
+                foreach (var task in _tasksOnDevices)
                 {
                     //if task exists in shedule
-                    if (sheduleOfProcessing.ContainsKey(tasksOnDevices.IndexOf(task))) continue;
+                    if (_sheduleOfProcessing.ContainsKey(_tasksOnDevices.IndexOf(task))) continue;
                     //id of the best device to this task
                     bestDevice = 0;
                     //у одного задания происходит пересмотр всех приборов и выбор самого эффективного для выполнения
                     //look at all devices, calculate time of ending of the real device and search the fastest device
-                    for (var device = 0; device < tasksOnDevices[0].Count; device++)
+                    for (var device = 0; device < _tasksOnDevices[0].Count; device++)
                     {
                         if (timeOfDeviceRelease[device] + task[device] < timeOfDeviceRelease[bestDevice] + task[bestDevice])
                         {
@@ -211,27 +219,27 @@ namespace DIPLOM
                     }
 
                     //add to the massive: id_task => bestDevice
-                    fastestDevices.Add(tasksOnDevices.IndexOf(task), bestDevice);
+                    fastestDevices.Add(_tasksOnDevices.IndexOf(task), bestDevice);
                 }
 
                 fastestTask = 0;
                 timeOfFastestTask = int.MaxValue;
                 foreach (var task in fastestDevices)
                 {
-                   if(timeOfDeviceRelease[task.Value] + tasksOnDevices[task.Key][task.Value] <timeOfFastestTask)
+                   if(timeOfDeviceRelease[task.Value] + _tasksOnDevices[task.Key][task.Value] <timeOfFastestTask)
                    {
                         fastestTask = task.Key;
-                        timeOfFastestTask = timeOfDeviceRelease[fastestDevices[fastestTask]] + tasksOnDevices[task.Key][task.Value];
+                        timeOfFastestTask = timeOfDeviceRelease[fastestDevices[fastestTask]] + _tasksOnDevices[task.Key][task.Value];
                    }
                 }
                 //в расписание записывается прибор и время завершения по ключу - номер запроса
-                sheduleOfProcessing.Add(
+                _sheduleOfProcessing.Add(
                     fastestTask, 
                     new int[] 
                     { 
                         fastestDevices[fastestTask], 
                         numbersTasksOnDevices[fastestDevices[fastestTask]]++,
-                        timeOfFastestTask - tasksOnDevices[fastestTask][fastestDevices[fastestTask]],
+                        timeOfFastestTask - _tasksOnDevices[fastestTask][fastestDevices[fastestTask]],
                         timeOfFastestTask 
                     });
                 timeOfDeviceRelease[fastestDevices[fastestTask]] += timeOfFastestTask;
@@ -244,20 +252,20 @@ namespace DIPLOM
             //создание расписания загрузки в хранилища
             int countStorages = (int)App.Current.Properties["countStorage"];
             //словарь для подсчёта заполнения хранилищ
-            Dictionary<int, int> containersToData = new Dictionary<int, int>();
-            //заполняем его записями: номер хранилища => объём занятых данных
+            Dictionary<int, int[]> containersToData = new Dictionary<int, int[]>();
+            //заполняем его записями: номер хранилища => объём занятых данных, время окончания загрузки
             //вначале все хранилища пусты
             for(var i =0; i<countStorages; i++ )
             {
-                containersToData.Add(i,0);
+                containersToData.Add(i,new int[] { 0, 0 });
             }
-           // изменить тип containersToData на словарь, заполнить его от 0 до (int)App.Current.Properties["countStorage"]] - 1 нулями 
-           // пример перебора отсортированного
-           // foreach (var pair in dict.OrderBy(pair => pair.Value))
-           // {
-           //   Console.WriteLine("{0} - {1}", pair.Key, pair.Value);
-           // }
-
+            // изменить тип containersToData на словарь, заполнить его от 0 до (int)App.Current.Properties["countStorage"]] - 1 нулями 
+            // пример перебора отсортированного
+            // foreach (var pair in dict.OrderBy(pair => pair.Value))
+            // {
+            //   Console.WriteLine("{0} - {1}", pair.Key, pair.Value);
+            // }
+            
 
             int speed              = (int)App.Current.Properties["speed"];
             int maxSize            = (int)App.Current.Properties["sizeStorage"];
@@ -271,62 +279,94 @@ namespace DIPLOM
             //7. повторять данное пока данные для всех запросов не будет размещены
 
             //расставляем запросы, первые в обработке
-            foreach (var task in sheduleOfProcessing)
+            foreach (var task in _sheduleOfProcessing)
             {
                 //если запрос является первым, то его данные грузятся в хранилище с номером прибора ( для упрощения кода)
                 if(task.Value[1] == 1)
                 {
                     //для тех запросов, которые обрабатываются первыми на устройствах
                     //данные грузятся на различные хранилища первыми
-                    sheduleOfLoading.Add(
+                    _sheduleOfLoading.Add(
                         task.Key, 
                         new int[] 
                         {
-                            task.Value[0],                   //номер хранилища
-                            1,                               //порядковый номер загрузки в хранилище
-                            0,                               //
-                            sizeDataInTasks[task.Key] * speed//
+                            task.Value[0],                    //номер хранилища
+                            1,                                //порядковый номер загрузки в хранилище
+                            0,                                //время начала загрузки
+                            _sizeDataInTasks[task.Key] * speed //время окончания загрузки
                         });
+
                     //заполняем контейнеры данными
-                    containersToData[task.Value[0]] += sizeDataInTasks[task.Key];
+                    containersToData[task.Value[0]][0] += _sizeDataInTasks[task.Key];
+
+                    //записываем время окончания загрузки в данное хранилище
+                    containersToData[task.Value[0]][0] += _sizeDataInTasks[task.Key] * speed;
                 }
             }
 
             //флаг для определения нашелся ли запрос,
             //данные которого сейчас помещаются в какое-либо хранилище
             var taskFinding = false;
-            var taskWithMinData = int.MaxValue;
-            //теперь заполняем хранилища данными для запросов доверху
+
+            //айди наименее объёмного подходящего задания
+            //подходящий - время начала обработки больше, чем время начала загрузки
+            var taskWithMinData = 0;
+
+            //объём наименьшего запроса
+            var sizeOfTaskWithMindata = int.MaxValue;
+
+            //айди наиболее заполненного хранилища
+            var leastEmptyStorage = 0;
+
+            //заполнение хранилищ данными для запросов доверху
             while(true) //цикл будет работать
             {
                 taskFinding = false;
-                taskWithMinData = int.MaxValue;
+                taskWithMinData = 0;
+
+                //определение наиболее заполненного хранилища
+                leastEmptyStorage = 0;
+                var max = 0;
+                foreach(var storage in containersToData)
+                {
+                    if (storage.Value[0] > max)
+                    {
+                        max = storage.Value[0];
+                        leastEmptyStorage = storage.Key;
+                    }
+                }
+                sizeOfTaskWithMindata = int.MaxValue;
+
 
                 //обход всех запросов и поиск наименьшего подходящего
-                for (var data = 0; data < sizeDataInTasks.Count; data++ )
+                for (var data = 0; data < _sizeDataInTasks.Count; data++ )
                 {
                     //если данные запроса уже размещены в расписании, его нужно пропустить
-                    if(sheduleOfLoading.ContainsKey(data))
+                    if(_sheduleOfLoading.ContainsKey(data))
                     {
                         continue;
                     }
 
                     //если запрос требует ресурсов меньше,
                     //чем текущий наименьший, то теперь он наименьший
-                    if(sizeDataInTasks[data] < sizeDataInTasks[taskWithMinData])
+                    //так же время обработки должно быть больше времени начала загрузки
+                    if(_sizeDataInTasks[data] < sizeOfTaskWithMindata 
+                        && 
+                        _sheduleOfProcessing[data][2] > containersToData[leastEmptyStorage][1])
                     {
                         taskWithMinData = data;
+                        sizeOfTaskWithMindata = _sizeDataInTasks[data];
                     }
                 }
 
+                //запрос может быть не найден, если запросы на размещение закончились
                 if(!taskFinding)
                 {
-                    break;
+                    return;
                 }
 
-                //требуется найти контейнер для данного запроса
+                //добавить в расписание запись о размещении запроса taskWithMinData в хранилище leastEmptyStorage
 
-                //отсортировать список контейнеров и найти наименее занятый
 
             }
         }
