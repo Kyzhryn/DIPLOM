@@ -110,7 +110,8 @@ namespace DIPLOM
             }
            
             App.Current.Properties["countStorage"] = massiveWithSettings[0];
-            App.Current.Properties["sizeStorage"] = massiveWithSettings[1];
+            App.Current.Properties["sizeStorage"]  = massiveWithSettings[1];
+            App.Current.Properties["speed"]        = massiveWithSettings[2];
 
             _tasksOnDevices       = new List<List<int>>();
             _sizeDataInTasks      = new List<int>();
@@ -253,11 +254,11 @@ namespace DIPLOM
             int countStorages = (int)App.Current.Properties["countStorage"];
             //словарь для подсчёта заполнения хранилищ
             Dictionary<int, int[]> containersToData = new Dictionary<int, int[]>();
-            //заполняем его записями: номер хранилища => объём занятых данных, время окончания загрузки
+            //заполняем его записями: номер хранилища => объём занятых данных, время окончания загрузки, кол-во элементов на загрузку
             //вначале все хранилища пусты
             for(var i =0; i<countStorages; i++ )
             {
-                containersToData.Add(i,new int[] { 0, 0 });
+                containersToData.Add(i,new int[] { 0, 0, 0 });
             }
             // изменить тип containersToData на словарь, заполнить его от 0 до (int)App.Current.Properties["countStorage"]] - 1 нулями 
             // пример перебора отсортированного
@@ -268,7 +269,7 @@ namespace DIPLOM
             
 
             int speed              = (int)App.Current.Properties["speed"];
-            int maxSize            = (int)App.Current.Properties["sizeStorage"];
+            int sizeStorage        = (int)App.Current.Properties["sizeStorage"];
             //1. найти все запросы, которые первые на приборах 
             //2. добавить их в расписание на различные устройства первыми соотвественно
             //(иначе ограничение мат модели выполняться не будет)
@@ -300,13 +301,23 @@ namespace DIPLOM
                     containersToData[task.Value[0]][0] += _sizeDataInTasks[task.Key];
 
                     //записываем время окончания загрузки в данное хранилище
-                    containersToData[task.Value[0]][0] += _sizeDataInTasks[task.Key] * speed;
+                    containersToData[task.Value[0]][1] += _sizeDataInTasks[task.Key] * speed;
+
+                    //увеличиваем кол-во загружаемых запросов в хранилище
+                    containersToData[task.Value[0]][2]++;
                 }
+            }
+
+            //если расставлены все запросы, то выйти
+            if (_sheduleOfLoading.Count == _sheduleOfProcessing.Count)
+            {
+                MessageBox.Show("Обработка окончена");
+                return;
             }
 
             //флаг для определения нашелся ли запрос,
             //данные которого сейчас помещаются в какое-либо хранилище
-            var taskFinding = false;
+           // var taskFinding = false;
 
             //айди наименее объёмного подходящего задания
             //подходящий - время начала обработки больше, чем время начала загрузки
@@ -321,8 +332,14 @@ namespace DIPLOM
             //заполнение хранилищ данными для запросов доверху
             while(true) //цикл будет работать
             {
-                taskFinding = false;
+                
                 taskWithMinData = 0;
+
+                if (_sheduleOfLoading.Count == _sheduleOfProcessing.Count)
+                {
+                    MessageBox.Show("Обработка окончена");
+                    return;
+                }
 
                 //определение наиболее заполненного хранилища
                 leastEmptyStorage = 0;
@@ -359,15 +376,39 @@ namespace DIPLOM
                     }
                 }
 
-                //запрос может быть не найден, если запросы на размещение закончились
-                if(!taskFinding)
+
+                //если размер наименьшего запроса слишком велик, чтобы уместиться в хранилище, то данный этап следует прервать
+                //и перейти к этапу расстановки запросов по мере освобождения памяти в хранилищах в моменты завершения обработки запросов
+
+                if(sizeOfTaskWithMindata > sizeStorage - containersToData[leastEmptyStorage][0])
                 {
+                    MessageBox.Show("Создание расписаний окончено!");
                     return;
                 }
 
+               
+
                 //добавить в расписание запись о размещении запроса taskWithMinData в хранилище leastEmptyStorage
+                _sheduleOfLoading.Add(
+                        taskWithMinData,
+                        new int[]
+                        {
+                           leastEmptyStorage,                            //номер хранилища
+                           containersToData[leastEmptyStorage][2],     //порядковый номер загрузки в хранилище
+                           containersToData[leastEmptyStorage][1],       //время начала загрузки
+                           containersToData[leastEmptyStorage][1] + _sizeDataInTasks[taskWithMinData] * speed   //время окончания загрузки
+                        });
 
+                //обновить данные о хранилище
 
+                //заполняем контейнеры данными
+                containersToData[leastEmptyStorage][0] += _sizeDataInTasks[taskWithMinData];
+
+                //записываем время окончания загрузки в данное хранилище
+                containersToData[leastEmptyStorage][1] += _sizeDataInTasks[taskWithMinData] * speed;
+
+                //увеличиваем кол-во загружаемых запросов в хранилище
+                containersToData[leastEmptyStorage][2]++;
             }
         }
 

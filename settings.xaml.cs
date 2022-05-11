@@ -15,7 +15,7 @@ namespace DIPLOM
 
         public void btnSaveSettings(object sender, RoutedEventArgs e)
         {
-            string allSettings = count.Text + " " + size.Text;
+            string allSettings = count.Text + " " + size.Text + " " + speed.Text;
             int countStorage;
             int sizeStorage;
             int speedLoad;
