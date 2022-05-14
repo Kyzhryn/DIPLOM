@@ -197,7 +197,6 @@ namespace DIPLOM
             //счётчик для подсчета номеров запросов на приборах
             int[] numbersTasksOnDevices = Array.ConvertAll(new int[_tasksOnDevices[0].Count], x => x + 1);
 
-            //while (tempTasksOnDevices.Count !=0)
             while (_sheduleOfProcessing.Count != _tasksOnDevices.Count)
             {
                 fastestDevices.Clear();
@@ -251,6 +250,7 @@ namespace DIPLOM
 
 
             //создание расписания загрузки в хранилища
+
             int countStorages = (int)App.Current.Properties["countStorage"];
             //словарь для подсчёта заполнения хранилищ
             Dictionary<int, int[]> containersToData = new Dictionary<int, int[]>();
@@ -280,6 +280,8 @@ namespace DIPLOM
             //7. повторять данное пока данные для всех запросов не будет размещены
 
             //расставляем запросы, первые в обработке
+            #region
+
             foreach (var task in _sheduleOfProcessing)
             {
                 //если запрос является первым, то его данные грузятся в хранилище с номером прибора ( для упрощения кода)
@@ -307,17 +309,20 @@ namespace DIPLOM
                     containersToData[task.Value[0]][2]++;
                 }
             }
+            #endregion
 
-            //если расставлены все запросы, то выйти
+            //если расставлены данные для всех запросов, то выйти
+            #region
             if (_sheduleOfLoading.Count == _sheduleOfProcessing.Count)
             {
                 MessageBox.Show("Обработка окончена");
                 return;
             }
+            #endregion
 
             //флаг для определения нашелся ли запрос,
             //данные которого сейчас помещаются в какое-либо хранилище
-           // var taskFinding = false;
+            // var taskFinding = false;
 
             //айди наименее объёмного подходящего задания
             //подходящий - время начала обработки больше, чем время начала загрузки
@@ -330,18 +335,25 @@ namespace DIPLOM
             var leastEmptyStorage = 0;
 
             //заполнение хранилищ данными для запросов доверху
-            while(true) //цикл будет работать
+            #region
+            while (true) //цикл будет работать
             {
                 
                 taskWithMinData = 0;
 
+                //проверка на расстановку ресурсов для всех запросов
+                #region 
+                //данные для всех запросов поставлены в расписание 
                 if (_sheduleOfLoading.Count == _sheduleOfProcessing.Count)
                 {
                     MessageBox.Show("Обработка окончена");
                     return;
                 }
+                #endregion
+
 
                 //определение наиболее заполненного хранилища
+                #region
                 leastEmptyStorage = 0;
                 var max = 0;
                 foreach(var storage in containersToData)
@@ -353,9 +365,10 @@ namespace DIPLOM
                     }
                 }
                 sizeOfTaskWithMindata = int.MaxValue;
-
+                #endregion
 
                 //обход всех запросов и поиск наименьшего подходящего
+                #region
                 for (var data = 0; data < _sizeDataInTasks.Count; data++ )
                 {
                     //если данные запроса уже размещены в расписании, его нужно пропустить
@@ -375,20 +388,23 @@ namespace DIPLOM
                         sizeOfTaskWithMindata = _sizeDataInTasks[data];
                     }
                 }
+                #endregion
 
-
-                //если размер наименьшего запроса слишком велик, чтобы уместиться в хранилище, то данный этап следует прервать
-                //и перейти к этапу расстановки запросов по мере освобождения памяти в хранилищах в моменты завершения обработки запросов
-
-                if(sizeOfTaskWithMindata > sizeStorage - containersToData[leastEmptyStorage][0])
+                //если размер наименьшего запроса слишком велик, чтобы уместиться в хранилище
+                #region
+                if (sizeOfTaskWithMindata > sizeStorage - containersToData[leastEmptyStorage][0])
                 {
-                    MessageBox.Show("Создание расписаний окончено!");
-                    return;
+                    //обойти расписание обработки,
+                    //найти запрос,который закончит обработку раньше всех,
+                    //удалить объём его данных из его хранилища,
+                    //пометить каким-то образом запрос как освобожденный 
+                    //сделать continue
                 }
+                #endregion
 
-               
 
                 //добавить в расписание запись о размещении запроса taskWithMinData в хранилище leastEmptyStorage
+                #region
                 _sheduleOfLoading.Add(
                         taskWithMinData,
                         new int[]
@@ -398,8 +414,10 @@ namespace DIPLOM
                            containersToData[leastEmptyStorage][1],       //время начала загрузки
                            containersToData[leastEmptyStorage][1] + _sizeDataInTasks[taskWithMinData] * speed   //время окончания загрузки
                         });
+                #endregion
 
                 //обновить данные о хранилище
+                #region
 
                 //заполняем контейнеры данными
                 containersToData[leastEmptyStorage][0] += _sizeDataInTasks[taskWithMinData];
@@ -409,7 +427,9 @@ namespace DIPLOM
 
                 //увеличиваем кол-во загружаемых запросов в хранилище
                 containersToData[leastEmptyStorage][2]++;
+                #endregion
             }
+            #endregion
         }
 
         public void btnOpenSettingsWindow(object sender, RoutedEventArgs e)
