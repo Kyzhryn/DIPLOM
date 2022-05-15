@@ -9,13 +9,7 @@ using Microsoft.Win32;
 namespace DIPLOM
 {
 
-    public static class DictionaryExtensions
-    {
-        public static TKey MaxIndex<TKey>(this IDictionary<TKey, int[]> dictionary)
-        {
-            return dictionary.FirstOrDefault(x => x.Value == dictionary.Values.Max()).Key;
-        }
-    }
+    
 
     public partial class MainWindow : Window
     {
@@ -334,9 +328,12 @@ namespace DIPLOM
             //айди наиболее заполненного хранилища
             var leastEmptyStorage = 0;
 
+            //занесения освобожденных запросов по мере завершения их обработки
+            var processedRequests = new List<int>();
+
             //заполнение хранилищ данными для запросов доверху
             #region
-            while (true) //цикл будет работать
+            while (true)
             {
                 
                 taskWithMinData = 0;
@@ -351,28 +348,12 @@ namespace DIPLOM
                 }
                 #endregion
 
-
-                //определение наиболее заполненного хранилища
-                #region
-                leastEmptyStorage = 0;
-                var max = 0;
-                foreach(var storage in containersToData)
-                {
-                    if (storage.Value[0] > max)
-                    {
-                        max = storage.Value[0];
-                        leastEmptyStorage = storage.Key;
-                    }
-                }
-                sizeOfTaskWithMindata = int.MaxValue;
-                #endregion
-
                 //обход всех запросов и поиск наименьшего подходящего
                 #region
-                for (var data = 0; data < _sizeDataInTasks.Count; data++ )
+                for (var data = 0; data < _sizeDataInTasks.Count; data++)
                 {
                     //если данные запроса уже размещены в расписании, его нужно пропустить
-                    if(_sheduleOfLoading.ContainsKey(data))
+                    if (_sheduleOfLoading.ContainsKey(data))
                     {
                         continue;
                     }
@@ -380,9 +361,7 @@ namespace DIPLOM
                     //если запрос требует ресурсов меньше,
                     //чем текущий наименьший, то теперь он наименьший
                     //так же время обработки должно быть больше времени начала загрузки
-                    if(_sizeDataInTasks[data] < sizeOfTaskWithMindata 
-                        && 
-                        _sheduleOfProcessing[data][2] > containersToData[leastEmptyStorage][1])
+                    if (_sizeDataInTasks[data] < sizeOfTaskWithMindata)
                     {
                         taskWithMinData = data;
                         sizeOfTaskWithMindata = _sizeDataInTasks[data];
@@ -390,15 +369,53 @@ namespace DIPLOM
                 }
                 #endregion
 
+                //определение наиболее заполненного хранилища
+
+                
+                #region
+                leastEmptyStorage = 0;
+                var max = 0;
+                //перебор всех хранилищ
+                foreach(var storage in containersToData)
+                {
+                    //так как запрос на размещение уже определен, то 
+                    //имеется возможность узнать размер хранилища на момент
+                    //завершения загрузки данных последнего запроса
+                    var actualSizeOfData = containersToData[storage.Key][0];
+                    //перебор всех запросов, выявление тех,
+                    //кто на момент завершения загрузки ресурсов в текущее хранилище
+                    //завершил свою обработку
+                    foreach(var task in _sheduleOfProcessing)
+                    {
+                        //если запрос уже обработался,
+                        //хранить его данные не нужно
+                        if(task.Value[3] <= storage.Value[1])
+                        {
+                            actualSizeOfData -= _sizeDataInTasks[task.Key];
+                        }
+                    }
+
+                    //если актуальный размер хранилища больше текущего максимума,
+                    //в него помещаются данные для запроса,
+                    //время начала загрузки меньше времени начала обработки запроса
+                    if (actualSizeOfData > max &&
+                        sizeStorage - actualSizeOfData >= sizeOfTaskWithMindata &&
+                        containersToData[storage.Key][1] < _sheduleOfProcessing[taskWithMinData][2])
+                    {
+                        max = actualSizeOfData;
+                        leastEmptyStorage = storage.Key;
+                    }
+                }
+                sizeOfTaskWithMindata = int.MaxValue;
+                #endregion
+
+                
+
                 //если размер наименьшего запроса слишком велик, чтобы уместиться в хранилище
                 #region
                 if (sizeOfTaskWithMindata > sizeStorage - containersToData[leastEmptyStorage][0])
                 {
-                    //обойти расписание обработки,
-                    //найти запрос,который закончит обработку раньше всех,
-                    //удалить объём его данных из его хранилища,
-                    //пометить каким-то образом запрос как освобожденный 
-                    //сделать continue
+                    //непонятно, что в таком случае делать
                 }
                 #endregion
 
